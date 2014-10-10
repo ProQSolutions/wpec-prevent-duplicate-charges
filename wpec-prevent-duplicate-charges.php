@@ -45,10 +45,12 @@ function wpecdup_before_submit_checkout() {
 
 	if($processed_session_id) {
 		//This cart has been processed already!
-		//TODO: Empty cart here
-		//Proceed to transaction results
-		$wpsc_cart->unique_id = sha1(uniqid(rand(), true));
+
+		//Empty cart
+		wpecdup_reset_unqiue_id($wpsc_cart); //<-- redundent, but useful
 		$wpsc_cart->empty_cart();
+
+		//Proceed to transaction results
 
 		//Get redirect url
 		$transaction_url_with_sessionid = add_query_arg( 'sessionid', $processed_session_id, get_option( 'transact_url' ) );
@@ -94,6 +96,23 @@ function wpecdup_has_been_paid($cart,$userid) {
 		return $processed_session_id = get_user_meta($userid, 'wpecdup_processed_cart_'.$cart->unique_id, true);
 	
 	return false;
+}
+
+//When the cart is cleared, we can reset the unique id
+add_action( 'wpsc_clear_cart', 'wpecdup_reset_try_unqiue_id', 10, 1 );
+
+function wpecdup_reset_unqiue_id(&$cart) {
+	$cart->unique_id = sha1(uniqid(rand(), true));
+}
+
+//We can only reset the unique_id from the hook if the cart is the current global cart
+//So here we check if the current cart is equal to the cart passed by the hook
+function wpecdup_reset_try_unqiue_id($cart) {
+	global $wpsc_cart;
+
+	if($wpsc_cart == $cart) {
+		wpecdup_reset_unqiue_id($wpsc_cart);
+	}
 }
 
 
